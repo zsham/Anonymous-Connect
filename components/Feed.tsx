@@ -8,14 +8,15 @@ interface FeedProps {
   onLike: (id: string) => void;
   onComment: (id: string, text: string) => void;
   onOpenCreate: () => void;
+  currentUserAvatar: string;
 }
 
-const Feed: React.FC<FeedProps> = ({ posts, onLike, onComment, onOpenCreate }) => {
+const Feed: React.FC<FeedProps> = ({ posts, onLike, onComment, onOpenCreate, currentUserAvatar }) => {
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto">
       {/* Quick Create Bar */}
       <div className="bg-[#0D0208] border border-[#003B00] p-4 flex items-center gap-4 group hover:border-[#00FF41] transition-all">
-        <img src="https://picsum.photos/seed/hacker/200/200" className="w-10 h-10 border border-[#003B00] grayscale group-hover:grayscale-0 transition-all" alt="" />
+        <img src={currentUserAvatar} className="w-10 h-10 border border-[#003B00] grayscale group-hover:grayscale-0 transition-all" alt="" />
         <button 
           onClick={onOpenCreate}
           className="flex-1 bg-[#001500]/50 text-left px-5 py-2 text-[#003B00] group-hover:text-[#00FF41] text-[10px] tracking-[0.2em] font-bold transition-colors uppercase"

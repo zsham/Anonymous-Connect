@@ -1,14 +1,16 @@
 
 import React, { useState } from 'react';
 import { generatePostDraft, generatePostImage } from '../services/geminiService';
+import { User } from '../types';
 
 interface CreatePostModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (post: { content: string; image?: string }) => void;
+  currentUser: User;
 }
 
-const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSubmit }) => {
+const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSubmit, currentUser }) => {
   const [content, setContent] = useState('');
   const [image, setImage] = useState<string | undefined>();
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
@@ -90,7 +92,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSu
           </div>
 
           <div className="flex gap-4 mb-4">
-            <img src="https://picsum.photos/seed/hacker/200/200" className="w-10 h-10 border border-[#003B00] grayscale" alt="" />
+            <img src={currentUser.avatar} className="w-10 h-10 border border-[#003B00] grayscale" alt="" />
             <textarea 
               value={content}
               onChange={(e) => setContent(e.target.value)}
@@ -137,7 +139,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSu
 
         <div className="p-6 bg-[#001500]/30 border-t border-[#00FF41] flex items-center justify-between">
           <div className="text-[9px] text-[#003B00] font-bold uppercase tracking-widest">
-            NODE: <b>NEO_ROOT</b>
+            NODE: <b>{currentUser.name}</b>
           </div>
           <button 
             onClick={handleSubmit}

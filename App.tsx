@@ -1,29 +1,51 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { HashRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { HashRouter as Router, useNavigate } from 'react-router-dom';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Feed from './components/Feed';
 import Explore from './components/Explore';
 import Profile from './components/Profile';
 import CreatePostModal from './components/CreatePostModal';
-import { Post, User, TabType } from './types';
-import { INITIAL_POSTS, CURRENT_USER, INITIAL_USERS } from './constants';
+import Auth from './components/Auth';
+import { Post, User, TabType, AuthUser } from './types';
+import { INITIAL_POSTS, INITIAL_USERS } from './constants';
 
 const AppContent: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [users, setUsers] = useState<User[]>(INITIAL_USERS);
   const [activeTab, setActiveTab] = useState<TabType>(TabType.HOME);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('nexus_current_user');
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
+    setIsInitialized(true);
+  }, []);
+
+  const handleAuthSuccess = (user: AuthUser) => {
+    setCurrentUser(user);
+    localStorage.setItem('nexus_current_user', JSON.stringify(user));
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem('nexus_current_user');
+  };
 
   const handleCreatePost = (newPost: Omit<Post, 'id' | 'likes' | 'comments' | 'timestamp' | 'isLiked' | 'userName' | 'userHandle' | 'userAvatar' | 'userId'>) => {
+    if (!currentUser) return;
     const post: Post = {
       ...newPost,
       id: `node-${Date.now()}`,
-      userId: CURRENT_USER.id,
-      userName: CURRENT_USER.name,
-      userHandle: CURRENT_USER.handle,
-      userAvatar: CURRENT_USER.avatar,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userHandle: currentUser.handle,
+      userAvatar: currentUser.avatar,
       likes: 0,
       comments: [],
       timestamp: '0x00 Now',
@@ -47,13 +69,14 @@ const AppContent: React.FC = () => {
   };
 
   const addComment = (postId: string, content: string) => {
+    if (!currentUser) return;
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
         const newComment = {
           id: `tx-${Date.now()}`,
-          userId: CURRENT_USER.id,
-          userName: CURRENT_USER.name,
-          userAvatar: CURRENT_USER.avatar,
+          userId: currentUser.id,
+          userName: currentUser.name,
+          userAvatar: currentUser.avatar,
           content,
           timestamp: 'Just now'
         };
@@ -70,17 +93,21 @@ const AppContent: React.FC = () => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, isFollowing: !u.isFollowing } : u));
   };
 
+  if (!isInitialized) return null;
+
+  if (!currentUser) {
+    return <Auth onAuthSuccess={handleAuthSuccess} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#0D0208] text-[#00FF41] flex flex-col selection:bg-[#00FF41] selection:text-[#0D0208]">
-      <Header />
+      <Header currentUser={currentUser} onLogout={handleLogout} />
       
       <main className="flex-1 max-w-7xl mx-auto w-full flex gap-6 px-4 md:px-6 py-6 overflow-hidden">
-        {/* Left Sidebar */}
         <div className="hidden lg:block w-64 flex-shrink-0">
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onOpenCreate={() => setIsCreateModalOpen(true)} />
         </div>
 
-        {/* Main Feed Area */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {activeTab === TabType.HOME && (
             <Feed 
@@ -88,13 +115,13 @@ const AppContent: React.FC = () => {
               onLike={toggleLike} 
               onComment={addComment} 
               onOpenCreate={() => setIsCreateModalOpen(true)}
+              currentUserAvatar={currentUser.avatar}
             />
           )}
           {activeTab === TabType.EXPLORE && <Explore />}
-          {activeTab === TabType.PROFILE && <Profile user={CURRENT_USER} posts={posts.filter(p => p.userId === CURRENT_USER.id)} />}
+          {activeTab === TabType.PROFILE && <Profile user={currentUser} posts={posts.filter(p => p.userId === currentUser.id)} />}
         </div>
 
-        {/* Right Sidebar - Suggestions */}
         <div className="hidden xl:block w-80 flex-shrink-0">
           <div className="bg-[#0D0208] matrix-border p-5 sticky top-6">
             <h3 className="font-bold text-lg mb-4 matrix-glow tracking-widest uppercase text-xs">Adjacent Nodes</h3>
@@ -126,7 +153,6 @@ const AppContent: React.FC = () => {
         </div>
       </main>
 
-      {/* Bottom Nav */}
       <div className="lg:hidden bg-[#0D0208] border-t border-[#003B00] sticky bottom-0 left-0 right-0 z-40 flex justify-around items-center py-4">
         <button onClick={() => setActiveTab(TabType.HOME)} className={`p-2 ${activeTab === TabType.HOME ? 'matrix-glow' : 'opacity-40'}`}>
           <i className="fa-solid fa-terminal text-xl"></i>
@@ -137,11 +163,11 @@ const AppContent: React.FC = () => {
         <button onClick={() => setIsCreateModalOpen(true)} className="p-3 bg-[#00FF41] text-[#0D0208] shadow-[0_0_15px_#00FF41]">
           <i className="fa-solid fa-plus text-xl"></i>
         </button>
-        <button onClick={() => setActiveTab(TabType.NOTIFICATIONS)} className={`p-2 ${activeTab === TabType.NOTIFICATIONS ? 'matrix-glow' : 'opacity-40'}`}>
-          <i className="fa-solid fa-microchip text-xl"></i>
-        </button>
         <button onClick={() => setActiveTab(TabType.PROFILE)} className={`p-2 ${activeTab === TabType.PROFILE ? 'matrix-glow' : 'opacity-40'}`}>
           <i className="fa-solid fa-id-badge text-xl"></i>
+        </button>
+        <button onClick={handleLogout} className="p-2 opacity-40 hover:text-red-500 hover:opacity-100">
+          <i className="fa-solid fa-power-off text-xl"></i>
         </button>
       </div>
 
@@ -149,6 +175,7 @@ const AppContent: React.FC = () => {
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)} 
         onSubmit={handleCreatePost} 
+        currentUser={currentUser}
       />
     </div>
   );

@@ -1,8 +1,13 @@
 
 import React from 'react';
-import { CURRENT_USER } from '../constants';
+import { User } from '../types';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  currentUser: User;
+  onLogout: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ currentUser, onLogout }) => {
   return (
     <header className="sticky top-0 z-50 bg-[#0D0208] border-b border-[#00FF41]/30 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
@@ -27,17 +32,18 @@ const Header: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-6">
-          <button className="relative p-2 text-[#00FF41] hover:matrix-glow">
-            <i className="fa-solid fa-inbox text-xl"></i>
-            <span className="absolute top-1 right-1 w-2 h-2 bg-[#00FF41] shadow-[0_0_5px_#00FF41] rounded-full"></span>
+          <button onClick={onLogout} className="hidden sm:flex items-center gap-2 text-[#003B00] hover:text-red-500 transition-colors uppercase text-[10px] font-bold tracking-widest">
+            <i className="fa-solid fa-power-off"></i>
+            Disconnect
           </button>
+          
           <div className="flex items-center gap-4 cursor-pointer group">
             <div className="text-right hidden sm:block">
-              <div className="text-xs font-bold leading-tight uppercase tracking-tighter">{CURRENT_USER.name}</div>
+              <div className="text-xs font-bold leading-tight uppercase tracking-tighter">{currentUser.name}</div>
               <div className="text-[8px] text-[#003B00] group-hover:text-[#00FF41] uppercase tracking-widest font-bold">Node_Active</div>
             </div>
             <img 
-              src={CURRENT_USER.avatar} 
+              src={currentUser.avatar} 
               className="w-10 h-10 border border-[#003B00] group-hover:border-[#00FF41] transition-all grayscale brightness-50 group-hover:brightness-100 group-hover:grayscale-0" 
               alt="Avatar" 
             />

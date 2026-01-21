@@ -8,6 +8,10 @@ export interface User {
   isFollowing?: boolean;
 }
 
+export interface AuthUser extends User {
+  accessKey: string;
+}
+
 export interface Comment {
   id: string;
   userId: string;

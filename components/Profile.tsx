@@ -12,52 +12,56 @@ const Profile: React.FC<ProfileProps> = ({ user, posts }) => {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Banner & Bio */}
-      <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden">
-        <div className="h-48 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 relative">
-          <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'url("https://www.transparenttextures.com/patterns/cubes.png")'}}></div>
+      <div className="bg-[#0D0208] border border-[#003B00] overflow-hidden">
+        <div className="h-40 bg-gradient-to-r from-[#001500] to-[#0D0208] relative border-b border-[#003B00]">
+          <div className="absolute inset-0 opacity-10 flex flex-wrap gap-2 p-2 overflow-hidden font-mono text-[8px] text-[#00FF41] select-none pointer-events-none">
+            {Array.from({ length: 50 }).map((_, i) => (
+              <span key={i}>{Math.random().toString(16).substring(2, 8)}</span>
+            ))}
+          </div>
         </div>
         <div className="px-8 pb-8 relative">
           <div className="flex justify-between items-end -mt-16 mb-6">
             <img 
               src={user.avatar} 
-              className="w-32 h-32 rounded-3xl border-4 border-white shadow-2xl bg-white" 
+              className="w-32 h-32 border-4 border-[#0D0208] matrix-border grayscale bg-black" 
               alt={user.name} 
             />
-            <button className="px-6 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-all">
-              Edit Profile
+            <button className="px-6 py-2.5 border border-[#003B00] text-[#00FF41] text-[10px] font-bold uppercase tracking-widest hover:bg-[#00FF41] hover:text-[#0D0208] transition-all">
+              Update_System_ID
             </button>
           </div>
           
           <div className="mb-6">
-            <h1 className="text-3xl font-black">{user.name}</h1>
-            <p className="text-slate-500 font-medium mb-4">{user.handle}</p>
-            <p className="text-slate-800 leading-relaxed max-w-md">
+            <h1 className="text-2xl font-bold uppercase tracking-[0.2em] matrix-glow">{user.name}</h1>
+            <p className="text-[#003B00] font-bold text-xs mb-4 uppercase">{user.handle} // NODE_ACTIVE</p>
+            <p className="text-[#00FF41]/70 leading-relaxed max-w-md text-xs font-['Fira_Code'] uppercase">
               {user.bio}
             </p>
           </div>
 
-          <div className="flex items-center gap-8 border-t border-slate-100 pt-6">
+          <div className="flex items-center gap-8 border-t border-[#001500] pt-6">
             <div className="text-center">
-              <div className="text-xl font-black">1.2k</div>
-              <div className="text-xs text-slate-400 font-bold uppercase tracking-widest">Followers</div>
+              <div className="text-xl font-bold matrix-glow">1.2K</div>
+              <div className="text-[8px] text-[#003B00] font-bold uppercase tracking-widest">Followers</div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-black">842</div>
-              <div className="text-xs text-slate-400 font-bold uppercase tracking-widest">Following</div>
+              <div className="text-xl font-bold matrix-glow">842</div>
+              <div className="text-[8px] text-[#003B00] font-bold uppercase tracking-widest">Following</div>
             </div>
             <div className="text-center">
-              <div className="text-xl font-black">{posts.length}</div>
-              <div className="text-xs text-slate-400 font-bold uppercase tracking-widest">Connect Posts</div>
+              <div className="text-xl font-bold matrix-glow">{posts.length}</div>
+              <div className="text-[8px] text-[#003B00] font-bold uppercase tracking-widest">Data_Packets</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white rounded-2xl border border-slate-200 p-1">
-        <button className="flex-1 py-3 text-sm font-bold text-blue-600 bg-blue-50 rounded-xl">Posts</button>
-        <button className="flex-1 py-3 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">Media</button>
-        <button className="flex-1 py-3 text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">Likes</button>
+      <div className="flex bg-[#0D0208] border border-[#003B00] p-1">
+        <button className="flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-[#0D0208] bg-[#00FF41]">Logs</button>
+        <button className="flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-[#003B00] hover:text-[#00FF41] transition-colors">Assets</button>
+        <button className="flex-1 py-3 text-[10px] font-bold uppercase tracking-widest text-[#003B00] hover:text-[#00FF41] transition-colors">Reactors</button>
       </div>
 
       {/* User's Posts */}
@@ -66,12 +70,12 @@ const Profile: React.FC<ProfileProps> = ({ user, posts }) => {
           <PostCard key={post.id} post={post} onLike={() => {}} onComment={() => {}} />
         ))}
         {posts.length === 0 && (
-          <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 border-dashed">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-              <i className="fa-solid fa-plus text-2xl"></i>
+          <div className="text-center py-20 border border-dashed border-[#003B00]">
+            <div className="w-12 h-12 border border-[#001500] flex items-center justify-center mx-auto mb-4 text-[#001500]">
+              <i className="fa-solid fa-plus text-xl"></i>
             </div>
-            <h3 className="text-lg font-bold text-slate-600">Start sharing</h3>
-            <p className="text-slate-400 text-sm mt-1">Your posts will appear here for the world to see.</p>
+            <h3 className="text-xs font-bold text-[#003B00] uppercase tracking-widest">Initialize_Stream</h3>
+            <p className="text-[#003B00] text-[8px] mt-1 uppercase tracking-tighter">No packets detected in current node buffer.</p>
           </div>
         )}
       </div>
