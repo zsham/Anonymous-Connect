@@ -1,0 +1,8 @@
+{
+  "name": "Anonymous Connect",
+  "description": "A privacy-focused, AI-enhanced social platform for secure and vibrant interactions.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

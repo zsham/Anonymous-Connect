@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anonymous Connect | The Matrix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Fira+Code:wght@300;400;500;700&display=swap');
+      
+      :root {
+        --matrix-green: #00FF41;
+        --matrix-dark-green: #003B00;
+        --matrix-bg: #0D0208;
+      }
+
+      body {
+        font-family: 'Share Tech Mono', monospace;
+        background-color: var(--matrix-bg);
+        color: var(--matrix-green);
+        overflow-x: hidden;
+      }
+
+      .matrix-border {
+        border: 1px solid var(--matrix-dark-green);
+        box-shadow: 0 0 5px rgba(0, 255, 65, 0.1);
+      }
+
+      .matrix-border:hover {
+        border-color: var(--matrix-green);
+        box-shadow: 0 0 15px rgba(0, 255, 65, 0.3);
+      }
+
+      .matrix-glow {
+        text-shadow: 0 0 8px rgba(0, 255, 65, 0.6);
+      }
+
+      .matrix-btn {
+        background: transparent;
+        border: 1px solid var(--matrix-green);
+        color: var(--matrix-green);
+        transition: all 0.3s ease;
+      }
+
+      .matrix-btn:hover {
+        background: var(--matrix-green);
+        color: var(--matrix-bg);
+        box-shadow: 0 0 20px var(--matrix-green);
+      }
+
+      .crt-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 150, 0.03));
+        z-index: 1000;
+        background-size: 100% 2px, 3px 100%;
+        pointer-events: none;
+      }
+
+      .scanline {
+        width: 100%;
+        height: 100px;
+        z-index: 1001;
+        background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(0, 255, 65, 0.05) 50%, rgba(0, 0, 0, 0) 100%);
+        opacity: 0.1;
+        position: absolute;
+        bottom: 100%;
+        animation: scanline 10s linear infinite;
+        pointer-events: none;
+      }
+
+      @keyframes scanline {
+        0% { bottom: 100%; }
+        100% { bottom: -100px; }
+      }
+
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: var(--matrix-bg);
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: var(--matrix-dark-green);
+        border-radius: 0px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: var(--matrix-green);
+      }
+
+      input, textarea {
+        background: rgba(0, 20, 0, 0.5) !important;
+        border: 1px solid var(--matrix-dark-green) !important;
+        color: var(--matrix-green) !important;
+      }
+      input:focus, textarea:focus {
+        border-color: var(--matrix-green) !important;
+        box-shadow: 0 0 10px rgba(0, 255, 65, 0.2) !important;
+      }
+    </style>
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+        "react": "https://esm.sh/react@^19.2.3",
+        "react/": "https://esm.sh/react@^19.2.3/",
+        "react-router-dom": "https://esm.sh/react-router-dom@^7.12.0",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <div class="crt-overlay"></div>
+    <div class="scanline"></div>
+    <div id="root"></div>
+  </body>
+</html>
