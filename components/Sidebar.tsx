@@ -6,13 +6,14 @@ interface SidebarProps {
   activeTab: TabType;
   setActiveTab: (tab: TabType) => void;
   onOpenCreate: () => void;
+  notificationCount?: number;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onOpenCreate }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onOpenCreate, notificationCount = 0 }) => {
   const navItems = [
     { id: TabType.HOME, icon: 'fa-terminal', label: 'ROOT_FEED' },
     { id: TabType.EXPLORE, icon: 'fa-code-branch', label: 'QUERY_WORLD' },
-    { id: TabType.NOTIFICATIONS, icon: 'fa-microchip', label: 'INTERCEPTS', badge: '!' },
+    { id: TabType.NOTIFICATIONS, icon: 'fa-microchip', label: 'INTERCEPTS', badge: notificationCount > 0 ? notificationCount.toString() : null },
     { id: TabType.PROFILE, icon: 'fa-id-badge', label: 'IDENTITY_NODE' },
   ];
 
@@ -34,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onOpenCreate
               <span className="text-[10px] tracking-[0.2em] font-bold uppercase">{item.label}</span>
             </div>
             {item.badge && (
-              <span className="bg-red-900 text-white text-[8px] px-1 border border-red-500 animate-pulse">
+              <span className="bg-red-900 text-white text-[8px] px-1.5 border border-red-500 animate-pulse font-bold">
                 {item.badge}
               </span>
             )}

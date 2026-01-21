@@ -6,6 +6,9 @@ export interface User {
   avatar: string;
   bio?: string;
   isFollowing?: boolean;
+  friendIds?: string[];
+  incomingRequestIds?: string[];
+  outgoingRequestIds?: string[];
 }
 
 export interface AuthUser extends User {
