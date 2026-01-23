@@ -6,9 +6,10 @@ interface PostCardProps {
   post: Post;
   onLike: () => void;
   onComment: (text: string) => void;
+  onShare: () => void;
 }
 
-const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare }) => {
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
 
@@ -19,55 +20,85 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment }) => {
     setCommentText('');
   };
 
-  return (
-    <article className="bg-[#0D0208] border border-[#003B00] hover:border-[#00FF41] transition-all group overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b border-[#003B00] group-hover:border-[#00FF41]/50 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src={post.userAvatar} className="w-10 h-10 border border-[#003B00] grayscale brightness-50 group-hover:brightness-100 group-hover:grayscale-0 transition-all" alt={post.userName} />
-          <div>
-            <div className="font-bold text-xs uppercase tracking-widest group-hover:matrix-glow transition-all">{post.userName}</div>
-            <div className="text-[9px] text-[#003B00] group-hover:text-[#00FF41]/60 flex items-center gap-2 uppercase">
-              <span>{post.userHandle}</span>
-              <span>//</span>
-              <span>{post.timestamp}</span>
+  const renderPostContent = (p: Post, isNested = false) => {
+    return (
+      <>
+        {/* Header */}
+        <div className={`p-4 ${isNested ? 'bg-[#001500]/50' : 'border-b border-[#003B00]'} group-hover:border-[#00FF41]/50 flex items-center justify-between`}>
+          <div className="flex items-center gap-3">
+            <img 
+              src={p.userAvatar} 
+              className={`${isNested ? 'w-8 h-8' : 'w-10 h-10'} border border-[#003B00] grayscale brightness-50 group-hover:brightness-100 group-hover:grayscale-0 transition-all`} 
+              alt={p.userName} 
+            />
+            <div>
+              <div className={`${isNested ? 'text-[10px]' : 'text-xs'} font-bold uppercase tracking-widest group-hover:matrix-glow transition-all`}>
+                {p.userName}
+              </div>
+              <div className={`${isNested ? 'text-[7px]' : 'text-[9px]'} text-[#003B00] group-hover:text-[#00FF41]/60 flex items-center gap-2 uppercase`}>
+                <span>{p.userHandle}</span>
+                <span>//</span>
+                <span>{p.timestamp}</span>
+              </div>
             </div>
           </div>
+          {!isNested && (
+            <button className="text-[#003B00] hover:text-[#00FF41]">
+              <i className="fa-solid fa-code text-sm"></i>
+            </button>
+          )}
         </div>
-        <button className="text-[#003B00] hover:text-[#00FF41]">
-          <i className="fa-solid fa-code text-sm"></i>
-        </button>
-      </div>
 
-      {/* Content */}
-      <div className="p-5">
-        <p className="text-xs leading-relaxed text-[#00FF41]/80 font-['Fira_Code'] whitespace-pre-wrap selection:bg-[#00FF41] selection:text-[#0D0208]">
-          {post.content}
-        </p>
-      </div>
-
-      {/* Media Rendering */}
-      {post.image && (
-        <div className="relative border-y border-[#003B00] bg-black group-hover:border-[#00FF41]/30">
-          <img src={post.image} className="w-full h-auto grayscale opacity-40 group-hover:opacity-80 group-hover:grayscale-0 transition-all duration-700" alt="Data Visualization" loading="lazy" />
-          <div className="absolute inset-0 pointer-events-none border border-transparent group-hover:border-[#00FF41]/20"></div>
+        {/* Content */}
+        <div className="p-5">
+          <p className={`${isNested ? 'text-[10px]' : 'text-xs'} leading-relaxed text-[#00FF41]/80 font-['Fira_Code'] whitespace-pre-wrap selection:bg-[#00FF41] selection:text-[#0D0208]`}>
+            {p.content}
+          </p>
         </div>
-      )}
 
-      {post.video && (
-        <div className="relative border-y border-[#003B00] bg-black group-hover:border-[#00FF41]/30 aspect-video overflow-hidden">
-          <video 
-            src={post.video} 
-            className="w-full h-full object-contain grayscale opacity-40 group-hover:opacity-80 group-hover:grayscale-0 transition-all duration-700" 
-            controls 
-            loop 
-            muted
-          />
-          {/* Subtle green overlay for "Matrix" look on video */}
-          <div className="absolute inset-0 pointer-events-none bg-[#00FF41]/5 mix-blend-color group-hover:opacity-0 transition-opacity"></div>
-          <div className="absolute bottom-3 right-3 px-2 py-0.5 border border-[#00FF41]/30 bg-[#0D0208]/80 text-[7px] text-[#00FF41] uppercase tracking-[0.2em] pointer-events-none font-bold">
-            SIGNAL_DECRYPTED_MP4
+        {/* Media Rendering */}
+        {p.image && (
+          <div className={`relative ${isNested ? 'max-h-60' : ''} border-y border-[#003B00] bg-black group-hover:border-[#00FF41]/30`}>
+            <img 
+              src={p.image} 
+              className={`w-full h-auto grayscale opacity-40 group-hover:opacity-80 group-hover:grayscale-0 transition-all duration-700 ${isNested ? 'max-h-60 object-cover' : ''}`} 
+              alt="Data Visualization" 
+              loading="lazy" 
+            />
+            <div className="absolute inset-0 pointer-events-none border border-transparent group-hover:border-[#00FF41]/20"></div>
           </div>
+        )}
+
+        {p.video && (
+          <div className={`relative border-y border-[#003B00] bg-black group-hover:border-[#00FF41]/30 ${isNested ? 'aspect-video scale-95' : 'aspect-video'} overflow-hidden`}>
+            <video 
+              src={p.video} 
+              className="w-full h-full object-contain grayscale opacity-40 group-hover:opacity-80 group-hover:grayscale-0 transition-all duration-700" 
+              controls 
+              loop 
+              muted
+            />
+            <div className="absolute inset-0 pointer-events-none bg-[#00FF41]/5 mix-blend-color group-hover:opacity-0 transition-opacity"></div>
+            <div className="absolute bottom-3 right-3 px-2 py-0.5 border border-[#00FF41]/30 bg-[#0D0208]/80 text-[7px] text-[#00FF41] uppercase tracking-[0.2em] pointer-events-none font-bold">
+              SIGNAL_DECRYPTED_MP4
+            </div>
+          </div>
+        )}
+      </>
+    );
+  };
+
+  return (
+    <article className="bg-[#0D0208] border border-[#003B00] hover:border-[#00FF41] transition-all group overflow-hidden">
+      {renderPostContent(post)}
+
+      {/* Relayed Content Container */}
+      {post.originalPost && (
+        <div className="mx-5 mb-5 border border-dashed border-[#003B00] group-hover:border-[#00FF41]/30 relative">
+          <div className="absolute -top-2 left-4 bg-[#0D0208] px-2 text-[7px] font-bold text-[#003B00] group-hover:text-[#00FF41] uppercase tracking-[0.2em]">
+            RELAYED_SIGNAL_FROM: {post.originalPost.userHandle}
+          </div>
+          {renderPostContent(post.originalPost, true)}
         </div>
       )}
 
@@ -89,7 +120,10 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment }) => {
           <span className="text-[10px] font-bold uppercase tracking-widest">{post.comments.length}</span>
         </button>
 
-        <button className="flex items-center gap-2 py-2 text-[#003B00] hover:text-[#00FF41] transition-all ml-auto">
+        <button 
+          onClick={onShare}
+          className="flex items-center gap-2 py-2 text-[#003B00] hover:text-[#00FF41] transition-all ml-auto"
+        >
           <i className="fa-solid fa-share-nodes text-sm"></i>
           <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest">RELAY</span>
         </button>

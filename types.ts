@@ -42,6 +42,7 @@ export interface Post {
   comments: Comment[];
   timestamp: string;
   isLiked: boolean;
+  originalPost?: Post; // For shared/relayed posts
 }
 
 export interface Group {

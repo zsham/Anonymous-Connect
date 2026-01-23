@@ -12,11 +12,12 @@ interface GroupDetailProps {
   onLeave: () => void;
   onLike: (id: string) => void;
   onComment: (id: string, text: string) => void;
+  onShare: (post: Post) => void;
   onOpenCreate: () => void;
 }
 
 const GroupDetail: React.FC<GroupDetailProps> = ({ 
-  group, posts, isMember, onJoin, onLeave, onLike, onComment, onOpenCreate 
+  group, posts, isMember, onJoin, onLeave, onLike, onComment, onShare, onOpenCreate 
 }) => {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -73,7 +74,13 @@ const GroupDetail: React.FC<GroupDetailProps> = ({
             <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#003B00] hover:text-[#00FF41]">Initialize_Transmission_to_Enclave...</span>
           </div>
           {posts.map(post => (
-            <PostCard key={post.id} post={post} onLike={() => onLike(post.id)} onComment={(txt) => onComment(post.id, txt)} />
+            <PostCard 
+              key={post.id} 
+              post={post} 
+              onLike={() => onLike(post.id)} 
+              onComment={(txt) => onComment(post.id, txt)} 
+              onShare={() => onShare(post)}
+            />
           ))}
           {posts.length === 0 && (
             <div className="text-center py-20 text-[#003B00] text-[10px] uppercase">Enclave buffer empty. Awaiting transmissions.</div>

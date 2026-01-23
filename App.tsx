@@ -112,6 +112,25 @@ const AppContent: React.FC = () => {
     setIsCreateModalOpen(false);
   };
 
+  const handleSharePost = (originalPost: Post) => {
+    if (!currentUser) return;
+    const sharePost: Post = {
+      id: `relay-${Date.now()}`,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userHandle: currentUser.handle,
+      userAvatar: currentUser.avatar,
+      content: `[SIGNAL_REFRACTION_ACTIVE] Relaying packet from node ${originalPost.userHandle}`,
+      likes: 0,
+      comments: [],
+      timestamp: '0x00 Now',
+      isLiked: false,
+      originalPost: originalPost
+    };
+    setPosts([sharePost, ...posts]);
+    setActiveTab(TabType.HOME);
+  };
+
   const handleCreateGroup = (groupData: Omit<Group, 'id' | 'memberIds' | 'adminIds'>) => {
     if (!currentUser) return;
     const newGroup: Group = {
@@ -194,6 +213,7 @@ const AppContent: React.FC = () => {
               posts={posts.filter(p => !p.groupId)} 
               onLike={toggleLike} 
               onComment={addComment} 
+              onShare={handleSharePost}
               onOpenCreate={() => setIsCreateModalOpen(true)}
               currentUserAvatar={currentUser.avatar}
             />
@@ -207,6 +227,9 @@ const AppContent: React.FC = () => {
               user={currentUser} 
               posts={posts.filter(p => p.userId === currentUser.id)} 
               onUpdateProfile={handleUpdateProfile}
+              onLike={toggleLike}
+              onComment={addComment}
+              onShare={handleSharePost}
             />
           )}
           {activeTab === TabType.GROUPS && (
@@ -227,6 +250,7 @@ const AppContent: React.FC = () => {
               onLeave={() => toggleGroupJoin(activeGroup.id, false)}
               onLike={toggleLike}
               onComment={addComment}
+              onShare={handleSharePost}
               onOpenCreate={() => setIsCreateModalOpen(true)}
             />
           )}

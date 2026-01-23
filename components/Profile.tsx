@@ -7,9 +7,12 @@ interface ProfileProps {
   user: User;
   posts: Post[];
   onUpdateProfile?: (updates: Partial<User>) => void;
+  onLike: (id: string) => void;
+  onComment: (id: string, text: string) => void;
+  onShare: (post: Post) => void;
 }
 
-const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdateProfile }) => {
+const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdateProfile, onLike, onComment, onShare }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user.name,
@@ -226,7 +229,13 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdateProfile }) => {
       {/* User's Posts */}
       <div className="space-y-6">
         {posts.map(post => (
-          <PostCard key={post.id} post={post} onLike={() => {}} onComment={() => {}} />
+          <PostCard 
+            key={post.id} 
+            post={post} 
+            onLike={() => onLike(post.id)} 
+            onComment={(txt) => onComment(post.id, txt)} 
+            onShare={() => onShare(post)}
+          />
         ))}
         {posts.length === 0 && (
           <div className="text-center py-20 border border-dashed border-[#003B00]">

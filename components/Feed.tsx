@@ -7,11 +7,12 @@ interface FeedProps {
   posts: Post[];
   onLike: (id: string) => void;
   onComment: (id: string, text: string) => void;
+  onShare: (post: Post) => void;
   onOpenCreate: () => void;
   currentUserAvatar: string;
 }
 
-const Feed: React.FC<FeedProps> = ({ posts, onLike, onComment, onOpenCreate, currentUserAvatar }) => {
+const Feed: React.FC<FeedProps> = ({ posts, onLike, onComment, onShare, onOpenCreate, currentUserAvatar }) => {
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto">
       {/* Quick Create Bar */}
@@ -37,6 +38,7 @@ const Feed: React.FC<FeedProps> = ({ posts, onLike, onComment, onOpenCreate, cur
             post={post} 
             onLike={() => onLike(post.id)} 
             onComment={(text) => onComment(post.id, text)} 
+            onShare={() => onShare(post)}
           />
         ))}
         {posts.length === 0 && (
