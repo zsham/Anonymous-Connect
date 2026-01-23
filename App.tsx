@@ -20,12 +20,10 @@ const AppContent: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Sync users with local storage to simulate a database
   useEffect(() => {
     const savedUser = localStorage.getItem('nexus_current_user');
     const storedUsers = JSON.parse(localStorage.getItem('connect_users') || '[]');
     
-    // Merge initial users with stored ones if not present
     const combined = [...INITIAL_USERS];
     storedUsers.forEach((u: User) => {
       if (!combined.find(c => c.id === u.id)) combined.push(u);
@@ -34,7 +32,6 @@ const AppContent: React.FC = () => {
 
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
-      // Ensure we have the latest version of current user from the user list
       const latest = combined.find(u => u.id === parsed.id) as AuthUser;
       setCurrentUser(latest || parsed);
     }
@@ -47,8 +44,6 @@ const AppContent: React.FC = () => {
       setCurrentUser(current);
       localStorage.setItem('nexus_current_user', JSON.stringify(current));
     }
-    // Filter out initial users from persistent storage to avoid duplication, 
-    // but in a real app we'd save everyone.
     localStorage.setItem('connect_users', JSON.stringify(updatedUsers.filter(u => !INITIAL_USERS.find(i => i.id === u.id))));
   };
 
@@ -114,7 +109,6 @@ const AppContent: React.FC = () => {
     }));
   };
 
-  // Friend Request Logic
   const sendFriendRequest = (targetId: string) => {
     if (!currentUser || targetId === currentUser.id) return;
     

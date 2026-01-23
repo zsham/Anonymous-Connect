@@ -32,6 +32,7 @@ export interface Post {
   userAvatar: string;
   content: string;
   image?: string;
+  video?: string;
   likes: number;
   comments: Comment[];
   timestamp: string;

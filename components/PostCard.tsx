@@ -46,11 +46,28 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment }) => {
         </p>
       </div>
 
-      {/* Image */}
+      {/* Media Rendering */}
       {post.image && (
         <div className="relative border-y border-[#003B00] bg-black group-hover:border-[#00FF41]/30">
           <img src={post.image} className="w-full h-auto grayscale opacity-40 group-hover:opacity-80 group-hover:grayscale-0 transition-all duration-700" alt="Data Visualization" loading="lazy" />
           <div className="absolute inset-0 pointer-events-none border border-transparent group-hover:border-[#00FF41]/20"></div>
+        </div>
+      )}
+
+      {post.video && (
+        <div className="relative border-y border-[#003B00] bg-black group-hover:border-[#00FF41]/30 aspect-video overflow-hidden">
+          <video 
+            src={post.video} 
+            className="w-full h-full object-contain grayscale opacity-40 group-hover:opacity-80 group-hover:grayscale-0 transition-all duration-700" 
+            controls 
+            loop 
+            muted
+          />
+          {/* Subtle green overlay for "Matrix" look on video */}
+          <div className="absolute inset-0 pointer-events-none bg-[#00FF41]/5 mix-blend-color group-hover:opacity-0 transition-opacity"></div>
+          <div className="absolute bottom-3 right-3 px-2 py-0.5 border border-[#00FF41]/30 bg-[#0D0208]/80 text-[7px] text-[#00FF41] uppercase tracking-[0.2em] pointer-events-none font-bold">
+            SIGNAL_DECRYPTED_MP4
+          </div>
         </div>
       )}
 

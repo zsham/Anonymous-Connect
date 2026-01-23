@@ -6,13 +6,14 @@ import { User } from '../types';
 interface CreatePostModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (post: { content: string; image?: string }) => void;
+  onSubmit: (post: { content: string; image?: string; video?: string }) => void;
   currentUser: User;
 }
 
 const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSubmit, currentUser }) => {
   const [content, setContent] = useState('');
   const [image, setImage] = useState<string | undefined>();
+  const [video, setVideo] = useState<string | undefined>();
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [topic, setTopic] = useState('');
@@ -47,11 +48,22 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSu
 
   const handleSubmit = () => {
     if (!content.trim()) return;
-    onSubmit({ content, image });
+    onSubmit({ content, image, video });
     setContent('');
     setImage(undefined);
+    setVideo(undefined);
     setTopic('');
     onClose();
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setVideo(reader.result as string);
+      reader.readAsDataURL(file);
+      setImage(undefined); // Mutual exclusivity for simple demo
+    }
   };
 
   return (
@@ -113,6 +125,22 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSu
             </div>
           )}
 
+          {video && (
+            <div className="relative border border-[#003B00] mb-4 group overflow-hidden bg-black aspect-video">
+              <video src={video} className="w-full h-full object-contain grayscale opacity-50 group-hover:opacity-100" autoPlay loop muted />
+              <div className="absolute inset-0 pointer-events-none border border-[#00FF41]/20"></div>
+              <button 
+                onClick={() => setVideo(undefined)}
+                className="absolute top-2 right-2 z-10 bg-black border border-red-900 text-red-500 p-2 hover:bg-red-900 hover:text-black transition-all"
+              >
+                <i className="fa-solid fa-trash-can"></i>
+              </button>
+              <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/80 border border-[#00FF41] text-[8px] uppercase tracking-widest text-[#00FF41]">
+                VIDEO_STREAM_PREVIEW
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-[#001500]">
              <button 
               onClick={handleAIImage}
@@ -124,15 +152,23 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ isOpen, onClose, onSu
             </button>
             <label className="px-4 py-2 border border-[#003B00] text-[#003B00] text-[9px] font-bold uppercase hover:text-[#00FF41] hover:border-[#00FF41] transition-all cursor-pointer">
               <i className="fa-solid fa-paperclip mr-2"></i>
-              Attach_Asset
+              Image_Asset
               <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
                   const reader = new FileReader();
-                  reader.onloadend = () => setImage(reader.result as string);
+                  reader.onloadend = () => {
+                    setImage(reader.result as string);
+                    setVideo(undefined);
+                  };
                   reader.readAsDataURL(file);
                 }
               }} />
+            </label>
+            <label className="px-4 py-2 border border-[#003B00] text-[#003B00] text-[9px] font-bold uppercase hover:text-[#00FF41] hover:border-[#00FF41] transition-all cursor-pointer">
+              <i className="fa-solid fa-video mr-2"></i>
+              Video_Stream
+              <input type="file" className="hidden" accept="video/*" onChange={handleVideoUpload} />
             </label>
           </div>
         </div>
