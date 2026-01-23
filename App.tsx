@@ -12,7 +12,7 @@ import Auth from './components/Auth';
 import Notifications from './components/Notifications';
 import Groups from './components/Groups';
 import GroupDetail from './components/GroupDetail';
-import { Post, User, TabType, AuthUser, Group, VisualProtocol } from './types';
+import { Post, User, TabType, AuthUser, Group, VisualProtocol, Comment } from './types';
 import { INITIAL_POSTS, INITIAL_USERS } from './constants';
 
 const THEMES: Record<VisualProtocol, { primary: string; secondary: string }> = {
@@ -169,19 +169,39 @@ const AppContent: React.FC = () => {
     }));
   };
 
-  const addComment = (postId: string, content: string) => {
+  const addComment = (postId: string, content: string, parentCommentId?: string, media?: string) => {
     if (!currentUser) return;
+    
+    const newComment: Comment = {
+      id: `tx-${Date.now()}`,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userAvatar: currentUser.avatar,
+      content,
+      media,
+      timestamp: 'Just now',
+      replies: []
+    };
+
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
-        const newComment = {
-          id: `tx-${Date.now()}`,
-          userId: currentUser.id,
-          userName: currentUser.name,
-          userAvatar: currentUser.avatar,
-          content,
-          timestamp: 'Just now'
-        };
-        return { ...p, comments: [...p.comments, newComment] };
+        if (!parentCommentId) {
+          return { ...p, comments: [...p.comments, newComment] };
+        } else {
+          // Recursive search for parent comment to add reply
+          const updateNested = (comments: Comment[]): Comment[] => {
+            return comments.map(c => {
+              if (c.id === parentCommentId) {
+                return { ...c, replies: [...(c.replies || []), newComment] };
+              }
+              if (c.replies && c.replies.length > 0) {
+                return { ...c, replies: updateNested(c.replies) };
+              }
+              return c;
+            });
+          };
+          return { ...p, comments: updateNested(p.comments) };
+        }
       }
       return p;
     }));

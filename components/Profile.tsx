@@ -8,7 +8,7 @@ interface ProfileProps {
   posts: Post[];
   onUpdateProfile?: (updates: Partial<User>) => void;
   onLike: (id: string) => void;
-  onComment: (id: string, text: string) => void;
+  onComment: (id: string, text: string, parentCommentId?: string, media?: string) => void;
   onShare: (post: Post) => void;
 }
 
@@ -233,7 +233,7 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdateProfile, onLike,
             key={post.id} 
             post={post} 
             onLike={() => onLike(post.id)} 
-            onComment={(txt) => onComment(post.id, txt)} 
+            onComment={(txt, parentId, media) => onComment(post.id, txt, parentId, media)} 
             onShare={() => onShare(post)}
           />
         ))}

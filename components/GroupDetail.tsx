@@ -11,7 +11,7 @@ interface GroupDetailProps {
   onJoin: () => void;
   onLeave: () => void;
   onLike: (id: string) => void;
-  onComment: (id: string, text: string) => void;
+  onComment: (id: string, text: string, parentCommentId?: string, media?: string) => void;
   onShare: (post: Post) => void;
   onOpenCreate: () => void;
 }
@@ -78,7 +78,7 @@ const GroupDetail: React.FC<GroupDetailProps> = ({
               key={post.id} 
               post={post} 
               onLike={() => onLike(post.id)} 
-              onComment={(txt) => onComment(post.id, txt)} 
+              onComment={(txt, parentId, media) => onComment(post.id, txt, parentId, media)} 
               onShare={() => onShare(post)}
             />
           ))}

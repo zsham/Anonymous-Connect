@@ -26,6 +26,8 @@ export interface Comment {
   userAvatar: string;
   content: string;
   timestamp: string;
+  media?: string; // Support for MOG (Media Object Generation)
+  replies?: Comment[]; // Nested replies
 }
 
 export interface Post {

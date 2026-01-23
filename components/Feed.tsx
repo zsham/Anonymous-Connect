@@ -6,7 +6,7 @@ import { Post } from '../types';
 interface FeedProps {
   posts: Post[];
   onLike: (id: string) => void;
-  onComment: (id: string, text: string) => void;
+  onComment: (id: string, text: string, parentCommentId?: string, media?: string) => void;
   onShare: (post: Post) => void;
   onOpenCreate: () => void;
   currentUserAvatar: string;
@@ -37,7 +37,7 @@ const Feed: React.FC<FeedProps> = ({ posts, onLike, onComment, onShare, onOpenCr
             key={post.id} 
             post={post} 
             onLike={() => onLike(post.id)} 
-            onComment={(text) => onComment(post.id, text)} 
+            onComment={(text, parentId, media) => onComment(post.id, text, parentId, media)} 
             onShare={() => onShare(post)}
           />
         ))}

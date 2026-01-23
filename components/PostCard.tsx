@@ -1,23 +1,125 @@
 
 import React, { useState } from 'react';
-import { Post } from '../types';
+import { Post, Comment } from '../types';
+import { generatePostImage } from '../services/geminiService';
 
 interface PostCardProps {
   post: Post;
   onLike: () => void;
-  onComment: (text: string) => void;
+  onComment: (text: string, parentCommentId?: string, media?: string) => void;
   onShare: () => void;
 }
 
 const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare }) => {
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
+  const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [isGeneratingMog, setIsGeneratingMog] = useState(false);
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
     onComment(commentText);
     setCommentText('');
+  };
+
+  const handleSubmitReply = (e: React.FormEvent, parentId: string, media?: string) => {
+    e.preventDefault();
+    if (!replyText.trim() && !media) return;
+    onComment(replyText, parentId, media);
+    setReplyText('');
+    setReplyTargetId(null);
+  };
+
+  const handleMogGeneration = async (prompt: string, parentId: string) => {
+    setIsGeneratingMog(true);
+    try {
+      const stickerPrompt = `A stylized matrix/cyberpunk holographic pixel art sticker representing: ${prompt || 'cyber connection'}`;
+      const imgUrl = await generatePostImage(stickerPrompt);
+      if (imgUrl) {
+        onComment(replyText, parentId, imgUrl);
+        setReplyText('');
+        setReplyTargetId(null);
+      }
+    } catch (err) {
+      console.error("MOG Generation Failed", err);
+    } finally {
+      setIsGeneratingMog(false);
+    }
+  };
+
+  const renderComment = (comment: Comment, depth = 0) => {
+    return (
+      <div key={comment.id} className={`${depth > 0 ? 'ml-6 mt-3 border-l border-[#003B00] pl-4' : 'mb-4'}`}>
+        <div className={`flex gap-3 group/comment`}>
+          <div className="w-6 h-6 border border-[#003B00] flex-shrink-0 group-hover/comment:border-[#00FF41] transition-colors">
+            <img src={comment.userAvatar} className="w-full h-full grayscale group-hover/comment:grayscale-0" alt="" />
+          </div>
+          <div className={`flex-1 bg-[#001500]/50 p-3 border border-[#003B00] group-hover/comment:border-[#00FF41]/30 transition-all ${comment.media ? 'border-r-2 border-[#00FF41]/40' : ''}`}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[9px] font-bold text-[#00FF41] uppercase tracking-tighter">{comment.userName}</span>
+              <span className="text-[8px] text-[#003B00]">{comment.timestamp}</span>
+            </div>
+            <p className="text-[10px] text-[#00FF41]/70 mb-2 leading-relaxed">{comment.content}</p>
+            
+            {comment.media && (
+              <div className="mb-2 max-w-[120px] border border-[#00FF41]/20">
+                <img src={comment.media} alt="MOG" className="w-full h-auto grayscale hover:grayscale-0 transition-all cursor-crosshair" />
+                <div className="text-[6px] text-[#00FF41] uppercase bg-black/80 px-1 py-0.5 text-center">MOG_ATTACHMENT</div>
+              </div>
+            )}
+
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setReplyTargetId(replyTargetId === comment.id ? null : comment.id)}
+                className="text-[7px] font-black uppercase tracking-widest text-[#003B00] hover:text-[#00FF41] transition-colors"
+              >
+                [HANDSHAKE_REPLY]
+              </button>
+            </div>
+
+            {replyTargetId === comment.id && (
+              <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="mt-3 flex gap-2">
+                <div className="flex-1 relative">
+                  <input 
+                    type="text" 
+                    autoFocus
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="REPLY_SIGNAL..." 
+                    className="w-full bg-[#0D0208] border border-[#003B00] px-3 py-1.5 text-[9px] uppercase outline-none focus:border-[#00FF41]"
+                  />
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
+                    <button 
+                      type="button"
+                      onClick={() => handleMogGeneration(replyText, comment.id)}
+                      disabled={isGeneratingMog}
+                      className="text-[#00FF41] opacity-40 hover:opacity-100 transition-all p-1"
+                      title="Generate MOG Sticker"
+                    >
+                      {isGeneratingMog ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-wand-sparkles"></i>}
+                    </button>
+                    <button 
+                      type="submit"
+                      disabled={!replyText.trim()}
+                      className="text-[#00FF41] disabled:opacity-20 p-1"
+                    >
+                      <i className="fa-solid fa-chevron-right"></i>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+        {comment.replies && comment.replies.length > 0 && (
+          <div className="space-y-2">
+            {comment.replies.map(reply => renderComment(reply, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderPostContent = (p: Post, isNested = false) => {
@@ -133,20 +235,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
       {showComments && (
         <div className="bg-[#0D0208] p-4 border-t border-[#003B00]">
           <div className="space-y-4 mb-4">
-            {post.comments.map(comment => (
-              <div key={comment.id} className="flex gap-3">
-                <div className="w-6 h-6 border border-[#003B00] flex-shrink-0">
-                    <img src={comment.userAvatar} className="w-full h-full grayscale" alt="" />
-                </div>
-                <div className="flex-1 bg-[#001500]/50 p-3 border border-[#003B00]">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[9px] font-bold text-[#00FF41] uppercase tracking-tighter">{comment.userName}</span>
-                    <span className="text-[8px] text-[#003B00]">{comment.timestamp}</span>
-                  </div>
-                  <p className="text-[10px] text-[#00FF41]/70">{comment.content}</p>
-                </div>
-              </div>
-            ))}
+            {post.comments.map(comment => renderComment(comment))}
           </div>
 
           <form onSubmit={handleSubmitComment} className="flex gap-3">
