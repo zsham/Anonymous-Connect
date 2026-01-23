@@ -10,18 +10,35 @@ interface PostCardProps {
   onShare: () => void;
 }
 
+const EMOJI_CATEGORIES = [
+  {
+    label: 'PROTOCOL_FACE',
+    symbols: ['😊', '😎', '👾', '🤖', '💀', '👽', '😈', '🤡', '🥵', '🥶', '😵', '🧐', '🤩', '🥳']
+  },
+  {
+    label: 'SYSTEM_ACTION',
+    symbols: ['🔥', '✨', '⚡️', '🦾', '💻', '🔐', '📡', '🔋', '💎', '🟢', '🔴', '⚠️', '☢️', '☣️']
+  },
+  {
+    label: 'DATA_LINKS',
+    symbols: ['🔗', '🧬', '🔮', '🛰️', '🛸', '🚀', '🔭', '🧪', '📱', '📟', '🕹️', '💾', '💿', '📼']
+  }
+];
+
 const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare }) => {
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [isGeneratingMog, setIsGeneratingMog] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState<{ type: 'comment' | 'reply', id?: string } | null>(null);
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
     onComment(commentText);
     setCommentText('');
+    setShowEmojiPicker(null);
   };
 
   const handleSubmitReply = (e: React.FormEvent, parentId: string, media?: string) => {
@@ -30,6 +47,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
     onComment(replyText, parentId, media);
     setReplyText('');
     setReplyTargetId(null);
+    setShowEmojiPicker(null);
   };
 
   const handleMogGeneration = async (prompt: string, parentId: string) => {
@@ -48,6 +66,49 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
       setIsGeneratingMog(false);
     }
   };
+
+  const handleEmojiSelect = (emoji: string, target: 'comment' | 'reply') => {
+    if (target === 'comment') {
+      setCommentText(prev => prev + emoji);
+    } else {
+      setReplyText(prev => prev + emoji);
+    }
+  };
+
+  const EmojiPicker = ({ onSelect, target }: { onSelect: (e: string) => void, target: 'comment' | 'reply' }) => (
+    <div className="absolute bottom-full right-0 mb-3 w-64 bg-[#0D0208] border-2 border-[#00FF41] shadow-[0_0_30px_rgba(0,255,65,0.4)] z-[60] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-[#00FF41] text-[#0D0208] px-3 py-1.5 flex justify-between items-center">
+        <span className="text-[8px] font-black uppercase tracking-[0.2em]">Symbol_Matrix_v4.2</span>
+        <button onClick={() => setShowEmojiPicker(null)} className="text-[10px]"><i className="fa-solid fa-xmark"></i></button>
+      </div>
+      
+      <div className="max-h-72 overflow-y-auto custom-scrollbar p-3 space-y-4">
+        {EMOJI_CATEGORIES.map((cat) => (
+          <div key={cat.label}>
+            <div className="text-[7px] text-[#00FF41]/50 mb-2 font-bold uppercase tracking-widest border-b border-[#00FF41]/10 pb-1">
+              {cat.label}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {cat.symbols.map(emoji => (
+                <button 
+                  key={emoji} 
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); onSelect(emoji); }}
+                  className="w-7 h-7 flex items-center justify-center hover:bg-[#00FF41]/20 hover:scale-125 transition-all text-base filter grayscale-[0.5] hover:grayscale-0"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      <div className="p-2 bg-[#001500] border-t border-[#00FF41]/20 text-center">
+         <span className="text-[6px] text-[#00FF41]/40 uppercase font-mono tracking-tighter">Handshake established with local symbol buffer</span>
+      </div>
+    </div>
+  );
 
   const renderComment = (comment: Comment, depth = 0) => {
     return (
@@ -90,7 +151,20 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
                     placeholder="REPLY_SIGNAL..." 
                     className="w-full bg-[#0D0208] border border-[#003B00] px-3 py-1.5 text-[9px] uppercase outline-none focus:border-[#00FF41]"
                   />
-                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
+                  <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1 items-center">
+                    <div className="relative">
+                      <button 
+                        type="button"
+                        onClick={() => setShowEmojiPicker(showEmojiPicker?.id === comment.id ? null : { type: 'reply', id: comment.id })}
+                        className={`p-1.5 transition-all ${showEmojiPicker?.id === comment.id ? 'text-[#00FF41] matrix-glow' : 'text-[#00E5FF] opacity-60 hover:opacity-100'}`}
+                        title="Open Symbol Matrix"
+                      >
+                        <i className="fa-regular fa-face-smile-beam"></i>
+                      </button>
+                      {showEmojiPicker?.type === 'reply' && showEmojiPicker?.id === comment.id && (
+                        <EmojiPicker onSelect={(e) => handleEmojiSelect(e, 'reply')} target="reply" />
+                      )}
+                    </div>
                     <button 
                       type="button"
                       onClick={() => handleMogGeneration(replyText, comment.id)}
@@ -247,13 +321,28 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
                 placeholder="INPUT_TRANSMISSION..." 
                 className="w-full bg-[#0D0208] border border-[#003B00] px-3 py-2 text-[10px] uppercase outline-none focus:border-[#00FF41]"
               />
-              <button 
-                type="submit"
-                disabled={!commentText.trim()}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#00FF41] disabled:opacity-20"
-              >
-                <i className="fa-solid fa-arrow-right text-xs"></i>
-              </button>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <div className="relative">
+                  <button 
+                    type="button"
+                    onClick={() => setShowEmojiPicker(showEmojiPicker?.type === 'comment' ? null : { type: 'comment' })}
+                    className={`p-1.5 transition-all ${showEmojiPicker?.type === 'comment' ? 'text-[#00FF41] matrix-glow' : 'text-[#00E5FF] opacity-60 hover:opacity-100'}`}
+                    title="Open Symbol Matrix"
+                  >
+                    <i className="fa-regular fa-face-smile-beam"></i>
+                  </button>
+                  {showEmojiPicker?.type === 'comment' && (
+                    <EmojiPicker onSelect={(e) => handleEmojiSelect(e, 'comment')} target="comment" />
+                  )}
+                </div>
+                <button 
+                  type="submit"
+                  disabled={!commentText.trim()}
+                  className="text-[#00FF41] disabled:opacity-20 p-1.5"
+                >
+                  <i className="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+              </div>
             </div>
           </form>
         </div>
