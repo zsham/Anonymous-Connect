@@ -12,8 +12,15 @@ import Auth from './components/Auth';
 import Notifications from './components/Notifications';
 import Groups from './components/Groups';
 import GroupDetail from './components/GroupDetail';
-import { Post, User, TabType, AuthUser, Group } from './types';
+import { Post, User, TabType, AuthUser, Group, VisualProtocol } from './types';
 import { INITIAL_POSTS, INITIAL_USERS } from './constants';
+
+const THEMES: Record<VisualProtocol, { primary: string; secondary: string }> = {
+  GREEN_ROOT: { primary: '#00FF41', secondary: '#003B00' },
+  AMBER_ARCHIVE: { primary: '#FFB000', secondary: '#503000' },
+  CYBER_PULSE: { primary: '#00E5FF', secondary: '#003B4D' },
+  CRITICAL_STRIKE: { primary: '#FF3131', secondary: '#4D0000' }
+};
 
 const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
@@ -25,6 +32,14 @@ const AppContent: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Apply visual protocol to CSS variables
+  useEffect(() => {
+    const protocol = currentUser?.template || 'GREEN_ROOT';
+    const colors = THEMES[protocol];
+    document.documentElement.style.setProperty('--matrix-green', colors.primary);
+    document.documentElement.style.setProperty('--matrix-dark-green', colors.secondary);
+  }, [currentUser?.template]);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('nexus_current_user');
@@ -53,18 +68,29 @@ const AppContent: React.FC = () => {
       setCurrentUser(current);
       localStorage.setItem('nexus_current_user', JSON.stringify(current));
     }
-    localStorage.setItem('connect_users', JSON.stringify(updatedUsers.filter(u => !INITIAL_USERS.find(i => i.id === u.id))));
+    const usersToStore = updatedUsers.filter(u => !INITIAL_USERS.some(i => i.id === u.id));
+    localStorage.setItem('connect_users', JSON.stringify(usersToStore));
     localStorage.setItem('connect_groups', JSON.stringify(updatedGroups));
   };
 
   const handleAuthSuccess = (user: AuthUser) => {
     setCurrentUser(user);
     localStorage.setItem('nexus_current_user', JSON.stringify(user));
+    if (!allUsers.find(u => u.id === user.id)) {
+      saveState([...allUsers, user], groups, user);
+    }
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     localStorage.removeItem('nexus_current_user');
+  };
+
+  const handleUpdateProfile = (updates: Partial<User>) => {
+    if (!currentUser) return;
+    const updatedUser = { ...currentUser, ...updates };
+    const updatedUsers = allUsers.map(u => u.id === currentUser.id ? updatedUser : u);
+    saveState(updatedUsers, groups, updatedUser as AuthUser);
   };
 
   const handleCreatePost = (newPost: { content: string; image?: string; video?: string }) => {
@@ -176,7 +202,13 @@ const AppContent: React.FC = () => {
           {activeTab === TabType.NOTIFICATIONS && (
             <Notifications requests={pendingRequests} onAccept={() => {}} onReject={() => {}} />
           )}
-          {activeTab === TabType.PROFILE && <Profile user={currentUser} posts={posts.filter(p => p.userId === currentUser.id)} />}
+          {activeTab === TabType.PROFILE && (
+            <Profile 
+              user={currentUser} 
+              posts={posts.filter(p => p.userId === currentUser.id)} 
+              onUpdateProfile={handleUpdateProfile}
+            />
+          )}
           {activeTab === TabType.GROUPS && (
             <Groups 
               groups={groups} 

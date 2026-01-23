@@ -1,10 +1,14 @@
 
+export type VisualProtocol = 'GREEN_ROOT' | 'AMBER_ARCHIVE' | 'CYBER_PULSE' | 'CRITICAL_STRIKE';
+
 export interface User {
   id: string;
   name: string;
   handle: string;
   avatar: string;
+  coverImage?: string;
   bio?: string;
+  template?: VisualProtocol;
   isFollowing?: boolean;
   friendIds?: string[];
   incomingRequestIds?: string[];
