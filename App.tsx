@@ -7,44 +7,54 @@ import Feed from './components/Feed';
 import Explore from './components/Explore';
 import Profile from './components/Profile';
 import CreatePostModal from './components/CreatePostModal';
+import CreateGroupModal from './components/CreateGroupModal';
 import Auth from './components/Auth';
 import Notifications from './components/Notifications';
-import { Post, User, TabType, AuthUser } from './types';
+import Groups from './components/Groups';
+import GroupDetail from './components/GroupDetail';
+import { Post, User, TabType, AuthUser, Group } from './types';
 import { INITIAL_POSTS, INITIAL_USERS } from './constants';
 
 const AppContent: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [allUsers, setAllUsers] = useState<User[]>(INITIAL_USERS);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>(TabType.HOME);
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('nexus_current_user');
     const storedUsers = JSON.parse(localStorage.getItem('connect_users') || '[]');
+    const storedGroups = JSON.parse(localStorage.getItem('connect_groups') || '[]');
     
-    const combined = [...INITIAL_USERS];
+    const combinedUsers = [...INITIAL_USERS];
     storedUsers.forEach((u: User) => {
-      if (!combined.find(c => c.id === u.id)) combined.push(u);
+      if (!combinedUsers.find(c => c.id === u.id)) combinedUsers.push(u);
     });
-    setAllUsers(combined);
+    setAllUsers(combinedUsers);
+    setGroups(storedGroups);
 
     if (savedUser) {
       const parsed = JSON.parse(savedUser);
-      const latest = combined.find(u => u.id === parsed.id) as AuthUser;
+      const latest = combinedUsers.find(u => u.id === parsed.id) as AuthUser;
       setCurrentUser(latest || parsed);
     }
     setIsInitialized(true);
   }, []);
 
-  const saveState = (updatedUsers: User[], current?: AuthUser | null) => {
+  const saveState = (updatedUsers: User[], updatedGroups: Group[], current?: AuthUser | null) => {
     setAllUsers(updatedUsers);
+    setGroups(updatedGroups);
     if (current) {
       setCurrentUser(current);
       localStorage.setItem('nexus_current_user', JSON.stringify(current));
     }
     localStorage.setItem('connect_users', JSON.stringify(updatedUsers.filter(u => !INITIAL_USERS.find(i => i.id === u.id))));
+    localStorage.setItem('connect_groups', JSON.stringify(updatedGroups));
   };
 
   const handleAuthSuccess = (user: AuthUser) => {
@@ -57,7 +67,7 @@ const AppContent: React.FC = () => {
     localStorage.removeItem('nexus_current_user');
   };
 
-  const handleCreatePost = (newPost: Omit<Post, 'id' | 'likes' | 'comments' | 'timestamp' | 'isLiked' | 'userName' | 'userHandle' | 'userAvatar' | 'userId'>) => {
+  const handleCreatePost = (newPost: { content: string; image?: string; video?: string }) => {
     if (!currentUser) return;
     const post: Post = {
       ...newPost,
@@ -66,6 +76,7 @@ const AppContent: React.FC = () => {
       userName: currentUser.name,
       userHandle: currentUser.handle,
       userAvatar: currentUser.avatar,
+      groupId: activeTab === TabType.GROUP_DETAIL && activeGroupId ? activeGroupId : undefined,
       likes: 0,
       comments: [],
       timestamp: '0x00 Now',
@@ -75,14 +86,39 @@ const AppContent: React.FC = () => {
     setIsCreateModalOpen(false);
   };
 
+  const handleCreateGroup = (groupData: Omit<Group, 'id' | 'memberIds' | 'adminIds'>) => {
+    if (!currentUser) return;
+    const newGroup: Group = {
+      ...groupData,
+      id: `cluster-${Date.now()}`,
+      memberIds: [currentUser.id],
+      adminIds: [currentUser.id]
+    };
+    const updatedGroups = [...groups, newGroup];
+    saveState(allUsers, updatedGroups, currentUser);
+    setIsGroupModalOpen(false);
+    setActiveGroupId(newGroup.id);
+    setActiveTab(TabType.GROUP_DETAIL);
+  };
+
+  const toggleGroupJoin = (groupId: string, join: boolean) => {
+    if (!currentUser) return;
+    const updatedGroups = groups.map(g => {
+      if (g.id === groupId) {
+        const members = join 
+          ? [...g.memberIds, currentUser.id] 
+          : g.memberIds.filter(id => id !== currentUser.id);
+        return { ...g, memberIds: members };
+      }
+      return g;
+    });
+    saveState(allUsers, updatedGroups, currentUser);
+  };
+
   const toggleLike = (postId: string) => {
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
-        return {
-          ...p,
-          isLiked: !p.isLiked,
-          likes: p.isLiked ? p.likes - 1 : p.likes + 1
-        };
+        return { ...p, isLiked: !p.isLiked, likes: p.isLiked ? p.likes - 1 : p.likes + 1 };
       }
       return p;
     }));
@@ -100,84 +136,17 @@ const AppContent: React.FC = () => {
           content,
           timestamp: 'Just now'
         };
-        return {
-          ...p,
-          comments: [...p.comments, newComment]
-        };
+        return { ...p, comments: [...p.comments, newComment] };
       }
       return p;
     }));
-  };
-
-  const sendFriendRequest = (targetId: string) => {
-    if (!currentUser || targetId === currentUser.id) return;
-    
-    const updatedUsers = allUsers.map(u => {
-      if (u.id === currentUser.id) {
-        const outgoing = u.outgoingRequestIds || [];
-        if (!outgoing.includes(targetId)) return { ...u, outgoingRequestIds: [...outgoing, targetId] };
-      }
-      if (u.id === targetId) {
-        const incoming = u.incomingRequestIds || [];
-        if (!incoming.includes(currentUser.id)) return { ...u, incomingRequestIds: [...incoming, currentUser.id] };
-      }
-      return u;
-    });
-
-    const newCurrent = updatedUsers.find(u => u.id === currentUser.id) as AuthUser;
-    saveState(updatedUsers, newCurrent);
-  };
-
-  const acceptFriendRequest = (requesterId: string) => {
-    if (!currentUser) return;
-
-    const updatedUsers = allUsers.map(u => {
-      if (u.id === currentUser.id) {
-        const incoming = (u.incomingRequestIds || []).filter(id => id !== requesterId);
-        const friends = u.friendIds || [];
-        return { ...u, incomingRequestIds: incoming, friendIds: [...friends, requesterId] };
-      }
-      if (u.id === requesterId) {
-        const outgoing = (u.outgoingRequestIds || []).filter(id => id !== currentUser.id);
-        const friends = u.friendIds || [];
-        return { ...u, outgoingRequestIds: outgoing, friendIds: [...friends, currentUser.id] };
-      }
-      return u;
-    });
-
-    const newCurrent = updatedUsers.find(u => u.id === currentUser.id) as AuthUser;
-    saveState(updatedUsers, newCurrent);
-  };
-
-  const rejectFriendRequest = (requesterId: string) => {
-    if (!currentUser) return;
-
-    const updatedUsers = allUsers.map(u => {
-      if (u.id === currentUser.id) {
-        const incoming = (u.incomingRequestIds || []).filter(id => id !== requesterId);
-        return { ...u, incomingRequestIds: incoming };
-      }
-      if (u.id === requesterId) {
-        const outgoing = (u.outgoingRequestIds || []).filter(id => id !== currentUser.id);
-        return { ...u, outgoingRequestIds: outgoing };
-      }
-      return u;
-    });
-
-    const newCurrent = updatedUsers.find(u => u.id === currentUser.id) as AuthUser;
-    saveState(updatedUsers, newCurrent);
   };
 
   if (!isInitialized) return null;
   if (!currentUser) return <Auth onAuthSuccess={handleAuthSuccess} />;
 
   const pendingRequests = allUsers.filter(u => currentUser.incomingRequestIds?.includes(u.id));
-  const suggestedNodes = allUsers.filter(u => 
-    u.id !== currentUser.id && 
-    !currentUser.friendIds?.includes(u.id) && 
-    !currentUser.outgoingRequestIds?.includes(u.id) &&
-    !currentUser.incomingRequestIds?.includes(u.id)
-  );
+  const activeGroup = groups.find(g => g.id === activeGroupId);
 
   return (
     <div className="min-h-screen bg-[#0D0208] text-[#00FF41] flex flex-col selection:bg-[#00FF41] selection:text-[#0D0208]">
@@ -187,7 +156,7 @@ const AppContent: React.FC = () => {
         <div className="hidden lg:block w-64 flex-shrink-0">
           <Sidebar 
             activeTab={activeTab} 
-            setActiveTab={setActiveTab} 
+            setActiveTab={(t) => { setActiveTab(t); setActiveGroupId(null); }} 
             onOpenCreate={() => setIsCreateModalOpen(true)} 
             notificationCount={pendingRequests.length}
           />
@@ -196,7 +165,7 @@ const AppContent: React.FC = () => {
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {activeTab === TabType.HOME && (
             <Feed 
-              posts={posts} 
+              posts={posts.filter(p => !p.groupId)} 
               onLike={toggleLike} 
               onComment={addComment} 
               onOpenCreate={() => setIsCreateModalOpen(true)}
@@ -205,107 +174,67 @@ const AppContent: React.FC = () => {
           )}
           {activeTab === TabType.EXPLORE && <Explore />}
           {activeTab === TabType.NOTIFICATIONS && (
-            <Notifications 
-              requests={pendingRequests} 
-              onAccept={acceptFriendRequest} 
-              onReject={rejectFriendRequest} 
-            />
+            <Notifications requests={pendingRequests} onAccept={() => {}} onReject={() => {}} />
           )}
           {activeTab === TabType.PROFILE && <Profile user={currentUser} posts={posts.filter(p => p.userId === currentUser.id)} />}
+          {activeTab === TabType.GROUPS && (
+            <Groups 
+              groups={groups} 
+              onSelectGroup={(id) => { setActiveGroupId(id); setActiveTab(TabType.GROUP_DETAIL); }}
+              onCreateGroup={() => setIsGroupModalOpen(true)}
+              currentUserFriendIds={currentUser.friendIds || []}
+            />
+          )}
+          {activeTab === TabType.GROUP_DETAIL && activeGroup && (
+            <GroupDetail 
+              group={activeGroup}
+              posts={posts.filter(p => p.groupId === activeGroupId)}
+              members={allUsers.filter(u => activeGroup.memberIds.includes(u.id))}
+              isMember={activeGroup.memberIds.includes(currentUser.id)}
+              onJoin={() => toggleGroupJoin(activeGroup.id, true)}
+              onLeave={() => toggleGroupJoin(activeGroup.id, false)}
+              onLike={toggleLike}
+              onComment={addComment}
+              onOpenCreate={() => setIsCreateModalOpen(true)}
+            />
+          )}
         </div>
 
+        {/* Right Sidebar */}
         <div className="hidden xl:block w-80 flex-shrink-0">
           <div className="bg-[#0D0208] matrix-border p-5 sticky top-6">
-            <h3 className="font-bold text-lg mb-4 matrix-glow tracking-widest uppercase text-xs">Adjacent Nodes</h3>
+            <h3 className="font-bold text-lg mb-4 matrix-glow tracking-widest uppercase text-xs">Joined_Clusters</h3>
             <div className="space-y-4">
-              {suggestedNodes.slice(0, 5).map(user => (
-                <div key={user.id} className="flex items-center justify-between group">
-                  <div className="flex items-center gap-3">
-                    <img src={user.avatar} className="w-10 h-10 border border-[#003B00] grayscale hover:grayscale-0 transition-all" alt="" />
-                    <div>
-                      <div className="font-semibold text-xs tracking-tighter">{user.name}</div>
-                      <div className="text-[10px] text-[#003B00] group-hover:text-[#00FF41] transition-colors">{user.handle}</div>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => sendFriendRequest(user.id)}
-                    className="text-[10px] uppercase font-bold px-3 py-1 transition-all border border-[#00FF41] text-[#00FF41] hover:bg-[#00FF41] hover:text-[#0D0208]"
-                  >
-                    Sync
-                  </button>
+              {groups.filter(g => g.memberIds.includes(currentUser.id)).slice(0, 5).map(g => (
+                <div key={g.id} onClick={() => { setActiveGroupId(g.id); setActiveTab(TabType.GROUP_DETAIL); }} className="flex items-center gap-3 cursor-pointer group">
+                  <img src={g.avatar} className="w-8 h-8 border border-[#003B00] group-hover:border-[#00FF41]" alt="" />
+                  <div className="text-[10px] font-bold uppercase tracking-widest group-hover:text-[#00FF41]">{g.name}</div>
                 </div>
               ))}
-              {currentUser.outgoingRequestIds?.map(id => {
-                const user = allUsers.find(u => u.id === id);
-                if (!user) return null;
-                return (
-                  <div key={id} className="flex items-center justify-between opacity-50">
-                    <div className="flex items-center gap-3">
-                      <img src={user.avatar} className="w-10 h-10 border border-[#003B00] grayscale" alt="" />
-                      <div>
-                        <div className="font-semibold text-xs tracking-tighter">{user.name}</div>
-                        <div className="text-[10px] text-[#003B00]">PENDING...</div>
-                      </div>
-                    </div>
-                    <i className="fa-solid fa-spinner fa-spin text-[10px]"></i>
-                  </div>
-                );
-              })}
-              {suggestedNodes.length === 0 && !currentUser.outgoingRequestIds?.length && (
-                <div className="text-[9px] text-[#003B00] uppercase text-center py-4">No new signals detected...</div>
+              {groups.filter(g => g.memberIds.includes(currentUser.id)).length === 0 && (
+                <div className="text-[9px] text-[#003B00] uppercase">Isolated node. No active clusters.</div>
               )}
             </div>
-            
-            <h3 className="font-bold text-lg mt-8 mb-4 matrix-glow tracking-widest uppercase text-xs">Active Links</h3>
-            <div className="space-y-3">
-              {currentUser.friendIds?.map(id => {
-                const friend = allUsers.find(u => u.id === id);
-                if (!friend) return null;
-                return (
-                  <div key={id} className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-[#00FF41] shadow-[0_0_5px_#00FF41]"></div>
-                    <img src={friend.avatar} className="w-8 h-8 border border-[#003B00]" alt="" />
-                    <span className="text-[10px] uppercase font-bold">{friend.name}</span>
-                  </div>
-                );
-              })}
-              {(!currentUser.friendIds || currentUser.friendIds.length === 0) && (
-                <div className="text-[9px] text-[#003B00] uppercase text-center">Protocol isolated. Establish links.</div>
-              )}
-            </div>
-
-            <div className="mt-6 pt-6 border-t border-[#003B00]">
-              <p className="text-[10px] text-[#003B00] uppercase tracking-[0.2em]">Reality.v4.0.1 // Simulation Active</p>
-            </div>
+            <button 
+              onClick={() => setActiveTab(TabType.GROUPS)}
+              className="w-full mt-6 py-2 text-[9px] font-bold border border-[#003B00] text-[#003B00] hover:border-[#00FF41] hover:text-[#00FF41] uppercase tracking-[0.2em]"
+            >
+              Browse_All_Nodes
+            </button>
           </div>
         </div>
       </main>
 
       <div className="lg:hidden bg-[#0D0208] border-t border-[#003B00] sticky bottom-0 left-0 right-0 z-40 flex justify-around items-center py-4">
-        <button onClick={() => setActiveTab(TabType.HOME)} className={`p-2 ${activeTab === TabType.HOME ? 'matrix-glow' : 'opacity-40'}`}>
-          <i className="fa-solid fa-terminal text-xl"></i>
-        </button>
-        <button onClick={() => setActiveTab(TabType.EXPLORE)} className={`p-2 ${activeTab === TabType.EXPLORE ? 'matrix-glow' : 'opacity-40'}`}>
-          <i className="fa-solid fa-code-branch text-xl"></i>
-        </button>
-        <button onClick={() => setIsCreateModalOpen(true)} className="p-3 bg-[#00FF41] text-[#0D0208] shadow-[0_0_15px_#00FF41]">
-          <i className="fa-solid fa-plus text-xl"></i>
-        </button>
-        <button onClick={() => setActiveTab(TabType.NOTIFICATIONS)} className={`p-2 relative ${activeTab === TabType.NOTIFICATIONS ? 'matrix-glow' : 'opacity-40'}`}>
-          <i className="fa-solid fa-microchip text-xl"></i>
-          {pendingRequests.length > 0 && <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>}
-        </button>
-        <button onClick={() => setActiveTab(TabType.PROFILE)} className={`p-2 ${activeTab === TabType.PROFILE ? 'matrix-glow' : 'opacity-40'}`}>
-          <i className="fa-solid fa-id-badge text-xl"></i>
-        </button>
+        <button onClick={() => setActiveTab(TabType.HOME)} className={`p-2 ${activeTab === TabType.HOME ? 'matrix-glow' : 'opacity-40'}`}><i className="fa-solid fa-terminal text-xl"></i></button>
+        <button onClick={() => setActiveTab(TabType.GROUPS)} className={`p-2 ${activeTab === TabType.GROUPS ? 'matrix-glow' : 'opacity-40'}`}><i className="fa-solid fa-network-wired text-xl"></i></button>
+        <button onClick={() => setIsCreateModalOpen(true)} className="p-3 bg-[#00FF41] text-[#0D0208] shadow-[0_0_15px_#00FF41]"><i className="fa-solid fa-plus text-xl"></i></button>
+        <button onClick={() => setActiveTab(TabType.NOTIFICATIONS)} className={`p-2 relative ${activeTab === TabType.NOTIFICATIONS ? 'matrix-glow' : 'opacity-40'}`}><i className="fa-solid fa-microchip text-xl"></i></button>
+        <button onClick={() => setActiveTab(TabType.PROFILE)} className={`p-2 ${activeTab === TabType.PROFILE ? 'matrix-glow' : 'opacity-40'}`}><i className="fa-solid fa-id-badge text-xl"></i></button>
       </div>
 
-      <CreatePostModal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
-        onSubmit={handleCreatePost} 
-        currentUser={currentUser}
-      />
+      <CreatePostModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSubmit={handleCreatePost} currentUser={currentUser} />
+      <CreateGroupModal isOpen={isGroupModalOpen} onClose={() => setIsGroupModalOpen(false)} onSubmit={handleCreateGroup} currentUser={currentUser} />
     </div>
   );
 };

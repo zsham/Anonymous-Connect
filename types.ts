@@ -33,10 +33,22 @@ export interface Post {
   content: string;
   image?: string;
   video?: string;
+  groupId?: string; // Links post to a specific group
   likes: number;
   comments: Comment[];
   timestamp: string;
   isLiked: boolean;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  handle: string;
+  description: string;
+  avatar: string;
+  coverImage: string;
+  memberIds: string[];
+  adminIds: string[];
 }
 
 export enum TabType {
@@ -44,4 +56,6 @@ export enum TabType {
   EXPLORE = 'explore',
   NOTIFICATIONS = 'notifications',
   PROFILE = 'profile',
+  GROUPS = 'groups',
+  GROUP_DETAIL = 'group_detail'
 }

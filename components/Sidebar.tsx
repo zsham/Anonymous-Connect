@@ -12,6 +12,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, onOpenCreate, notificationCount = 0 }) => {
   const navItems = [
     { id: TabType.HOME, icon: 'fa-terminal', label: 'ROOT_FEED' },
+    { id: TabType.GROUPS, icon: 'fa-network-wired', label: 'CLUSTERS_NET' },
     { id: TabType.EXPLORE, icon: 'fa-code-branch', label: 'QUERY_WORLD' },
     { id: TabType.NOTIFICATIONS, icon: 'fa-microchip', label: 'INTERCEPTS', badge: notificationCount > 0 ? notificationCount.toString() : null },
     { id: TabType.PROFILE, icon: 'fa-id-badge', label: 'IDENTITY_NODE' },
