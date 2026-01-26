@@ -9,10 +9,12 @@ interface ProfileProps {
   onUpdateProfile?: (updates: Partial<User>) => void;
   onLike: (id: string) => void;
   onComment: (id: string, text: string, parentCommentId?: string, media?: string) => void;
+  onView: (id: string) => void;
   onShare: (post: Post) => void;
+  allUsers: User[];
 }
 
-const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdateProfile, onLike, onComment, onShare }) => {
+const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdateProfile, onLike, onComment, onView, onShare, allUsers }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user.name,
@@ -234,7 +236,10 @@ const Profile: React.FC<ProfileProps> = ({ user, posts, onUpdateProfile, onLike,
             post={post} 
             onLike={() => onLike(post.id)} 
             onComment={(txt, parentId, media) => onComment(post.id, txt, parentId, media)} 
+            onView={() => onView(post.id)}
             onShare={() => onShare(post)}
+            currentUser={user}
+            allUsers={allUsers}
           />
         ))}
         {posts.length === 0 && (

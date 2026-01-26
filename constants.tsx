@@ -27,6 +27,7 @@ export const INITIAL_POSTS: Post[] = [
     image: 'https://picsum.photos/seed/code/1200/800',
     likes: 2048,
     comments: [],
+    viewerIds: ['2', '3'],
     timestamp: '0x2F ago',
     isLiked: false
   },
@@ -42,6 +43,7 @@ export const INITIAL_POSTS: Post[] = [
     comments: [
       { id: 'c1', userId: '1', userName: 'Trinity_Sys', userAvatar: 'https://picsum.photos/seed/cyber1/200/200', content: 'You always were a weak link in the chain.', timestamp: '0x0A ago' }
     ],
+    viewerIds: ['1', '2', '4'],
     timestamp: '0x4E ago',
     isLiked: true
   }

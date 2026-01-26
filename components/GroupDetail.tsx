@@ -12,16 +12,18 @@ interface GroupDetailProps {
   onLeave: () => void;
   onLike: (id: string) => void;
   onComment: (id: string, text: string, parentCommentId?: string, media?: string) => void;
+  onView: (id: string) => void;
   onShare: (post: Post) => void;
   onOpenCreate: () => void;
+  currentUser: User;
+  allUsers: User[];
 }
 
 const GroupDetail: React.FC<GroupDetailProps> = ({ 
-  group, posts, isMember, onJoin, onLeave, onLike, onComment, onShare, onOpenCreate 
+  group, posts, isMember, onJoin, onLeave, onLike, onComment, onView, onShare, onOpenCreate, currentUser, allUsers
 }) => {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Cluster Header */}
       <div className="bg-[#0D0208] border border-[#003B00] overflow-hidden">
         <div className="h-48 relative border-b border-[#003B00] bg-[#001500]">
           <img src={group.coverImage} className="w-full h-full object-cover grayscale opacity-40" alt="" />
@@ -53,21 +55,9 @@ const GroupDetail: React.FC<GroupDetailProps> = ({
               {isMember ? 'TERMINATE_SYNC' : 'HANDSHAKE_JOIN'}
             </button>
           </div>
-
-          <div className="flex gap-8 border-t border-[#001500] pt-4">
-            <div>
-              <div className="text-xs font-bold">{group.memberIds.length}</div>
-              <div className="text-[8px] text-[#003B00] uppercase font-bold tracking-tighter">Authorized_Nodes</div>
-            </div>
-            <div>
-              <div className="text-xs font-bold">{posts.length}</div>
-              <div className="text-[8px] text-[#003B00] uppercase font-bold tracking-tighter">Decrypted_Transmissions</div>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* Cluster Feed */}
       {isMember ? (
         <div className="space-y-6">
           <div className="bg-[#001500]/30 border border-dashed border-[#003B00] p-4 text-center cursor-pointer hover:border-[#00FF41] transition-all" onClick={onOpenCreate}>
@@ -79,18 +69,17 @@ const GroupDetail: React.FC<GroupDetailProps> = ({
               post={post} 
               onLike={() => onLike(post.id)} 
               onComment={(txt, parentId, media) => onComment(post.id, txt, parentId, media)} 
+              onView={() => onView(post.id)}
               onShare={() => onShare(post)}
+              currentUser={currentUser}
+              allUsers={allUsers}
             />
           ))}
-          {posts.length === 0 && (
-            <div className="text-center py-20 text-[#003B00] text-[10px] uppercase">Enclave buffer empty. Awaiting transmissions.</div>
-          )}
         </div>
       ) : (
         <div className="bg-[#001500]/20 border border-red-900/30 p-12 text-center">
           <i className="fa-solid fa-lock text-3xl text-red-900/50 mb-4"></i>
           <h3 className="text-[10px] font-bold text-red-900 uppercase tracking-widest">Access_Denied</h3>
-          <p className="text-red-900/50 text-[8px] mt-2 uppercase tracking-tighter">Synchronize with enclave to intercept data stream.</p>
         </div>
       )}
     </div>

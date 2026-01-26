@@ -42,6 +42,7 @@ export interface Post {
   groupId?: string; // Links post to a specific group
   likes: number;
   comments: Comment[];
+  viewerIds: string[]; // List of user IDs who have seen the post
   timestamp: string;
   isLiked: boolean;
   originalPost?: Post; // For shared/relayed posts

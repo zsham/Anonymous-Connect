@@ -105,6 +105,7 @@ const AppContent: React.FC = () => {
       groupId: activeTab === TabType.GROUP_DETAIL && activeGroupId ? activeGroupId : undefined,
       likes: 0,
       comments: [],
+      viewerIds: [],
       timestamp: '0x00 Now',
       isLiked: false
     };
@@ -123,6 +124,7 @@ const AppContent: React.FC = () => {
       content: `[SIGNAL_REFRACTION_ACTIVE] Relaying packet from node ${originalPost.userHandle}`,
       likes: 0,
       comments: [],
+      viewerIds: [],
       timestamp: '0x00 Now',
       isLiked: false,
       originalPost: originalPost
@@ -169,6 +171,16 @@ const AppContent: React.FC = () => {
     }));
   };
 
+  const handleViewPost = (postId: string) => {
+    if (!currentUser) return;
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId && !p.viewerIds.includes(currentUser.id)) {
+        return { ...p, viewerIds: [...p.viewerIds, currentUser.id] };
+      }
+      return p;
+    }));
+  };
+
   const addComment = (postId: string, content: string, parentCommentId?: string, media?: string) => {
     if (!currentUser) return;
     
@@ -188,7 +200,6 @@ const AppContent: React.FC = () => {
         if (!parentCommentId) {
           return { ...p, comments: [...p.comments, newComment] };
         } else {
-          // Recursive search for parent comment to add reply
           const updateNested = (comments: Comment[]): Comment[] => {
             return comments.map(c => {
               if (c.id === parentCommentId) {
@@ -233,9 +244,11 @@ const AppContent: React.FC = () => {
               posts={posts.filter(p => !p.groupId)} 
               onLike={toggleLike} 
               onComment={addComment} 
+              onView={handleViewPost}
               onShare={handleSharePost}
               onOpenCreate={() => setIsCreateModalOpen(true)}
-              currentUserAvatar={currentUser.avatar}
+              currentUser={currentUser}
+              allUsers={allUsers}
             />
           )}
           {activeTab === TabType.EXPLORE && <Explore />}
@@ -249,7 +262,9 @@ const AppContent: React.FC = () => {
               onUpdateProfile={handleUpdateProfile}
               onLike={toggleLike}
               onComment={addComment}
+              onView={handleViewPost}
               onShare={handleSharePost}
+              allUsers={allUsers}
             />
           )}
           {activeTab === TabType.GROUPS && (
@@ -270,8 +285,11 @@ const AppContent: React.FC = () => {
               onLeave={() => toggleGroupJoin(activeGroup.id, false)}
               onLike={toggleLike}
               onComment={addComment}
+              onView={handleViewPost}
               onShare={handleSharePost}
               onOpenCreate={() => setIsCreateModalOpen(true)}
+              currentUser={currentUser}
+              allUsers={allUsers}
             />
           )}
         </div>

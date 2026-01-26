@@ -1,13 +1,16 @@
 
-import React, { useState } from 'react';
-import { Post, Comment } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { Post, Comment, User } from '../types';
 import { generatePostImage } from '../services/geminiService';
 
 interface PostCardProps {
   post: Post;
   onLike: () => void;
   onComment: (text: string, parentCommentId?: string, media?: string) => void;
+  onView: () => void;
   onShare: () => void;
+  currentUser: User;
+  allUsers: User[];
 }
 
 const EMOJI_CATEGORIES = [
@@ -25,13 +28,39 @@ const EMOJI_CATEGORIES = [
   }
 ];
 
-const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare }) => {
+const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onView, onShare, currentUser, allUsers }) => {
   const [commentText, setCommentText] = useState('');
   const [showComments, setShowComments] = useState(false);
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [isGeneratingMog, setIsGeneratingMog] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState<{ type: 'comment' | 'reply', id?: string } | null>(null);
+  const [showViewerList, setShowViewerList] = useState(false);
+  
+  const cardRef = useRef<HTMLElement>(null);
+
+  // Automatic View Tracking
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          onView();
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.6 }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => {
+      if (cardRef.current) {
+        observer.unobserve(cardRef.current);
+      }
+    };
+  }, [post.id]);
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,12 +132,42 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
           </div>
         ))}
       </div>
-      
-      <div className="p-2 bg-[#001500] border-t border-[#00FF41]/20 text-center">
-         <span className="text-[6px] text-[#00FF41]/40 uppercase font-mono tracking-tighter">Handshake established with local symbol buffer</span>
-      </div>
     </div>
   );
+
+  const ViewerListModal = () => {
+    const viewers = allUsers.filter(u => post.viewerIds.includes(u.id));
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/95 backdrop-blur-sm" onClick={() => setShowViewerList(false)}></div>
+        <div className="bg-[#0D0208] w-full max-w-sm border border-[#00E5FF] shadow-[0_0_40px_rgba(0,229,255,0.2)] relative overflow-hidden flex flex-col max-h-[70vh]">
+          <div className="p-4 border-b border-[#00E5FF] flex items-center justify-between bg-[#00E5FF]/10">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.4em] text-[#00E5FF]">Intercept_Log_Authorized</h3>
+            <button onClick={() => setShowViewerList(false)} className="text-[#00E5FF] hover:matrix-glow">
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div className="p-4 overflow-y-auto custom-scrollbar space-y-3">
+            <div className="text-[8px] text-[#00E5FF]/50 uppercase tracking-widest mb-4">Displaying_Nodes_Intercepted_Signal:</div>
+            {viewers.length > 0 ? viewers.map(viewer => (
+              <div key={viewer.id} className="flex items-center gap-3 p-2 bg-[#001500]/30 border border-[#00E5FF]/10 hover:border-[#00E5FF]/50 transition-all group">
+                <img src={viewer.avatar} className="w-8 h-8 border border-[#00E5FF]/20 grayscale group-hover:grayscale-0" alt="" />
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#00E5FF]">{viewer.name}</div>
+                  <div className="text-[7px] text-[#00E5FF]/40 uppercase">{viewer.handle} // HANDSHAKE_CONFIRMED</div>
+                </div>
+              </div>
+            )) : (
+              <div className="text-center py-10 text-[10px] uppercase text-[#00E5FF]/30">Buffer clear. No interceptions detected.</div>
+            )}
+          </div>
+          <div className="p-3 bg-[#000F1A] border-t border-[#00E5FF]/20 text-center">
+            <span className="text-[6px] text-[#00E5FF]/40 uppercase tracking-tighter">Secure Telemetry Sequence 0x{post.id.slice(-4).toUpperCase()}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderComment = (comment: Comment, depth = 0) => {
     return (
@@ -199,7 +258,6 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
   const renderPostContent = (p: Post, isNested = false) => {
     return (
       <>
-        {/* Header */}
         <div className={`p-4 ${isNested ? 'bg-[#001500]/50' : 'border-b border-[#003B00]'} group-hover:border-[#00FF41]/50 flex items-center justify-between`}>
           <div className="flex items-center gap-3">
             <img 
@@ -225,39 +283,21 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
           )}
         </div>
 
-        {/* Content */}
         <div className="p-5">
           <p className={`${isNested ? 'text-[10px]' : 'text-xs'} leading-relaxed text-[#00FF41]/80 font-['Fira_Code'] whitespace-pre-wrap selection:bg-[#00FF41] selection:text-[#0D0208]`}>
             {p.content}
           </p>
         </div>
 
-        {/* Media Rendering */}
         {p.image && (
           <div className={`relative ${isNested ? 'max-h-60' : ''} border-y border-[#003B00] bg-black group-hover:border-[#00FF41]/30`}>
-            <img 
-              src={p.image} 
-              className={`w-full h-auto grayscale opacity-40 group-hover:opacity-80 group-hover:grayscale-0 transition-all duration-700 ${isNested ? 'max-h-60 object-cover' : ''}`} 
-              alt="Data Visualization" 
-              loading="lazy" 
-            />
-            <div className="absolute inset-0 pointer-events-none border border-transparent group-hover:border-[#00FF41]/20"></div>
+            <img src={p.image} className={`w-full h-auto grayscale opacity-40 group-hover:opacity-80 group-hover:grayscale-0 transition-all duration-700 ${isNested ? 'max-h-60 object-cover' : ''}`} alt="Data" loading="lazy" />
           </div>
         )}
 
         {p.video && (
-          <div className={`relative border-y border-[#003B00] bg-black group-hover:border-[#00FF41]/30 ${isNested ? 'aspect-video scale-95' : 'aspect-video'} overflow-hidden`}>
-            <video 
-              src={p.video} 
-              className="w-full h-full object-contain grayscale opacity-40 group-hover:opacity-80 group-hover:grayscale-0 transition-all duration-700" 
-              controls 
-              loop 
-              muted
-            />
-            <div className="absolute inset-0 pointer-events-none bg-[#00FF41]/5 mix-blend-color group-hover:opacity-0 transition-opacity"></div>
-            <div className="absolute bottom-3 right-3 px-2 py-0.5 border border-[#00FF41]/30 bg-[#0D0208]/80 text-[7px] text-[#00FF41] uppercase tracking-[0.2em] pointer-events-none font-bold">
-              SIGNAL_DECRYPTED_MP4
-            </div>
+          <div className={`relative border-y border-[#003B00] bg-black aspect-video overflow-hidden group-hover:border-[#00FF41]/30`}>
+            <video src={p.video} className="w-full h-full object-contain grayscale opacity-40 group-hover:opacity-80 group-hover:grayscale-0 transition-all" controls loop muted />
           </div>
         )}
       </>
@@ -265,10 +305,9 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
   };
 
   return (
-    <article className="bg-[#0D0208] border border-[#003B00] hover:border-[#00FF41] transition-all group overflow-hidden">
+    <article ref={cardRef} className="bg-[#0D0208] border border-[#003B00] hover:border-[#00FF41] transition-all group overflow-hidden">
       {renderPostContent(post)}
 
-      {/* Relayed Content Container */}
       {post.originalPost && (
         <div className="mx-5 mb-5 border border-dashed border-[#003B00] group-hover:border-[#00FF41]/30 relative">
           <div className="absolute -top-2 left-4 bg-[#0D0208] px-2 text-[7px] font-bold text-[#003B00] group-hover:text-[#00FF41] uppercase tracking-[0.2em]">
@@ -278,34 +317,34 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
         </div>
       )}
 
-      {/* Actions */}
       <div className="px-4 py-2 bg-[#001500]/30 border-t border-[#003B00] group-hover:border-[#00FF41]/30 flex items-center gap-6">
-        <button 
-          onClick={onLike}
-          className={`flex items-center gap-2 py-2 transition-all ${post.isLiked ? 'text-red-500' : 'text-[#003B00] hover:text-[#00FF41]'}`}
-        >
-          <i className={`${post.isLiked ? 'fa-solid' : 'fa-solid'} fa-bolt text-sm`}></i>
+        <button onClick={onLike} className={`flex items-center gap-2 py-2 transition-all ${post.isLiked ? 'text-red-500' : 'text-[#003B00] hover:text-[#00FF41]'}`}>
+          <i className="fa-solid fa-bolt text-sm"></i>
           <span className="text-[10px] font-bold uppercase tracking-widest">{post.likes}</span>
         </button>
 
-        <button 
-          onClick={() => setShowComments(!showComments)}
-          className="flex items-center gap-2 py-2 text-[#003B00] hover:text-[#00FF41] transition-all"
-        >
+        <button onClick={() => setShowComments(!showComments)} className="flex items-center gap-2 py-2 text-[#003B00] hover:text-[#00FF41] transition-all">
           <i className="fa-solid fa-comment-dots text-sm"></i>
           <span className="text-[10px] font-bold uppercase tracking-widest">{post.comments.length}</span>
         </button>
 
+        {/* View Count / Intercept Tracker */}
         <button 
-          onClick={onShare}
-          className="flex items-center gap-2 py-2 text-[#003B00] hover:text-[#00FF41] transition-all ml-auto"
+          onClick={() => post.userId === currentUser.id && setShowViewerList(true)}
+          className={`flex items-center gap-2 py-2 transition-all ${post.userId === currentUser.id ? 'text-[#00E5FF] cursor-pointer hover:matrix-glow' : 'text-[#003B00]'}`}
         >
+          <i className="fa-solid fa-eye text-sm"></i>
+          <span className="text-[10px] font-bold uppercase tracking-widest">
+            {post.viewerIds.length} {post.userId === currentUser.id ? 'SYNCED' : ''}
+          </span>
+        </button>
+
+        <button onClick={onShare} className="flex items-center gap-2 py-2 text-[#003B00] hover:text-[#00FF41] transition-all ml-auto">
           <i className="fa-solid fa-share-nodes text-sm"></i>
           <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest">RELAY</span>
         </button>
       </div>
 
-      {/* Comments Section */}
       {showComments && (
         <div className="bg-[#0D0208] p-4 border-t border-[#003B00]">
           <div className="space-y-4 mb-4">
@@ -323,23 +362,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 <div className="relative">
-                  <button 
-                    type="button"
-                    onClick={() => setShowEmojiPicker(showEmojiPicker?.type === 'comment' ? null : { type: 'comment' })}
-                    className={`p-1.5 transition-all ${showEmojiPicker?.type === 'comment' ? 'text-[#00FF41] matrix-glow' : 'text-[#00E5FF] opacity-60 hover:opacity-100'}`}
-                    title="Open Symbol Matrix"
-                  >
-                    <i className="fa-regular fa-face-smile-beam"></i>
+                  <button type="button" onClick={() => setShowEmojiPicker(showEmojiPicker?.type === 'comment' ? null : { type: 'comment' })} className={`p-1.5 transition-all ${showEmojiPicker?.type === 'comment' ? 'text-[#00FF41] matrix-glow' : 'text-[#00E5FF] opacity-60 hover:opacity-100'}`}>
+                    <i className="fa-regular fa-face-smile-beam text-xs"></i>
                   </button>
-                  {showEmojiPicker?.type === 'comment' && (
-                    <EmojiPicker onSelect={(e) => handleEmojiSelect(e, 'comment')} target="comment" />
-                  )}
+                  {showEmojiPicker?.type === 'comment' && <EmojiPicker onSelect={(e) => handleEmojiSelect(e, 'comment')} target="comment" />}
                 </div>
-                <button 
-                  type="submit"
-                  disabled={!commentText.trim()}
-                  className="text-[#00FF41] disabled:opacity-20 p-1.5"
-                >
+                <button type="submit" disabled={!commentText.trim()} className="text-[#00FF41] disabled:opacity-20 p-1.5">
                   <i className="fa-solid fa-arrow-right text-xs"></i>
                 </button>
               </div>
@@ -347,6 +375,8 @@ const PostCard: React.FC<PostCardProps> = ({ post, onLike, onComment, onShare })
           </form>
         </div>
       )}
+
+      {showViewerList && <ViewerListModal />}
     </article>
   );
 };
